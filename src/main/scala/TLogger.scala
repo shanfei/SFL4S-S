@@ -6,8 +6,7 @@ import org.slf4j.{Logger, LoggerFactory}
   *
   */
 
-
-trait TTraceImpl extends TLogger {
+case class TraceInstance(logger:Logger)  {
 
   def trace(message:Option[String]) = {
     if (logger.isTraceEnabled) {
@@ -26,10 +25,12 @@ trait TTraceImpl extends TLogger {
       logger.trace(format, arguments)
     }
   }
+}
 
-  val traceLogExecute:logExecute = trace
-  //TODO: add all other impl
-
+object TraceInstance {
+    def apply(logger:Logger) = {
+       new TraceInstance(logger)
+    }
 }
 
 trait TLogger {
@@ -39,23 +40,42 @@ trait TLogger {
        def getName:String = logger.getName
 
        type LogLevel = Int
-       type logExecute = Option[String] => Unit
-       type LogMessage = Option[Array[AnyRef]] => logExecute
-       type LogMessageWithThrowble = Option[Throwable] => logExecute
+       type LogExecute = Option[String] => Unit
+       type LogWithFormat = (Option[String], Option[Array[AnyRef]]) => Unit
+       type LogWithThrowble = Option[Throwable] => Unit
 
        val Trace: LogLevel = 1 //0x001
        val Warn: LogLevel = 2 //0x010
        val Info: LogLevel = 4 //0x011
        val Fatal: LogLevel = 8 //0x100
 
-       val logExecuteImpl:logExecute
-
+       val traceInstance = TraceInstance(logger)
 
        //TODO:add all other implementation
-       def log(t:Option[Throwable], level:LogLevel)(implicit format:Option[String] = None):logExecute = {
-         (level, t, format) match {
+       def log(message:String)
+              (implicit format:Option[String] = None, t:Option[Throwable] = None, level:LogLevel = Info):Unit = {
+          (level, t, format) match {
+
+              //Trace
              case (Trace, None, None) =>
-               logExecuteImpl
+               traceInstance.trace(Some(message))
+
+             case (Trace, t, None) =>
+
+             case (Trace, None, format) =>
+
+
+             //Warning
+             case (Warn, None, None) =>
+
+             case (Warn, t, None) =>
+
+             case (Warn, None, format) =>
+
+             //Info
+
+             case _ =>
+
            }
        }
 }
