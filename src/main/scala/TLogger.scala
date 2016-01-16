@@ -6,28 +6,58 @@ import org.slf4j.{Logger, LoggerFactory}
   *
   */
 
-case class TraceInstance(logger:Logger)  {
+trait LogFunctionPrototypeT {
 
-  def trace(message:Option[String]) = {
+  //in trace implemtation there 3 vals, warning 3....
+  type a = String => Unit
+  type b = (String, Throwable) => Unit
+  type c = (String, Array[AnyRef]) => Unit
+
+  val logSimple:a
+  val logWithException:b
+  val logWithFormat:c
+
+  type LogLevel = Int
+
+  val level:LogLevel
+
+
+//  val Warn: LogLevel = 2 //0x010
+//  val Info: LogLevel = 4 //0x011
+//  val Fatal: LogLevel = 8 //0x100
+
+
+}
+
+case class TraceInstance(logger:Logger) extends LogFunctionPrototypeT {
+
+  override val level: LogLevel = 1 //0x001
+
+  def traceA(message:String) = {
     if (logger.isTraceEnabled) {
-      logger.trace(message.get)
+      logger.trace(message)
     }
   }
 
-  def trace(message:String, throwable: Throwable) = {
+  def traceB(message:String, throwable: Throwable) = {
     if (logger.isTraceEnabled) {
       logger.trace(message, throwable)
     }
   }
 
-  def trace(format:String, arguments:Array[AnyRef]) = {
+  def traceC(format:String, arguments:Array[AnyRef]) = {
     if (logger.isTraceEnabled) {
       logger.trace(format, arguments)
     }
   }
+
+  override val logSimple:a = traceA
+  override val logWithException:b = traceB
+  override val logWithFormat:c = traceC
+
 }
 
-
+//acompany object
 object TraceInstance {
     def apply(logger:Logger) = {
        new TraceInstance(logger)
@@ -36,45 +66,31 @@ object TraceInstance {
 
 
 
-trait TLogger {
+trait TLogger  {
 
        val logger:Logger = LoggerFactory.getLogger(super.getClass)
 
        def getName:String = logger.getName
 
-       type LogLevel = Int
-
-       val Trace: LogLevel = 1 //0x001
-       val Warn: LogLevel = 2 //0x010
-       val Info: LogLevel = 4 //0x011
-       val Fatal: LogLevel = 8 //0x100
-
-       val traceInstance = TraceInstance(logger)
+      // val traceInstance = TraceInstance(logger)
 
        //TODO:add all other implementation
        def log(message:String)
               (implicit format:Option[String] = None, arguments:Option[Array[AnyRef]] = None, t:Option[Throwable] = None,
-               level:LogLevel = Info):Unit = {
-          (level, t, format, arguments) match {
+               instance:LogFunctionPrototypeT):Unit = {
+          (t, format, arguments) match {
 
               //Trace
-             case (Trace, None, None, None) =>
-               traceInstance.trace(Some(message))
+             case (None, None, None) =>
+               instance.logSimple(message)
 
-             case (Trace, t, None, None) =>
-               traceInstance.trace(message, t.get)
+             case (t, None, None) =>
+               instance.logWithException(message, t.get)
 
-             case (Trace, None, format, arguments) =>
-               traceInstance.trace(format.get, arguments.get)
+             case (None, format, arguments) =>
+               instance.logWithFormat(format.get, arguments.get)
 
-             //Warning
-             case (Warn, None, None, None) =>
 
-             case (Warn, t, None, None) =>
-
-             case (Warn, None, format, arguments) =>
-
-             //Info
 
              case _ =>
 
