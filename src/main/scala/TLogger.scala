@@ -27,11 +27,14 @@ case class TraceInstance(logger:Logger)  {
   }
 }
 
+
 object TraceInstance {
     def apply(logger:Logger) = {
        new TraceInstance(logger)
     }
 }
+
+
 
 trait TLogger {
 
@@ -40,9 +43,6 @@ trait TLogger {
        def getName:String = logger.getName
 
        type LogLevel = Int
-       type LogExecute = Option[String] => Unit
-       type LogWithFormat = (Option[String], Option[Array[AnyRef]]) => Unit
-       type LogWithThrowble = Option[Throwable] => Unit
 
        val Trace: LogLevel = 1 //0x001
        val Warn: LogLevel = 2 //0x010
@@ -53,24 +53,26 @@ trait TLogger {
 
        //TODO:add all other implementation
        def log(message:String)
-              (implicit format:Option[String] = None, t:Option[Throwable] = None, level:LogLevel = Info):Unit = {
-          (level, t, format) match {
+              (implicit format:Option[String] = None, arguments:Option[Array[AnyRef]] = None, t:Option[Throwable] = None,
+               level:LogLevel = Info):Unit = {
+          (level, t, format, arguments) match {
 
               //Trace
-             case (Trace, None, None) =>
+             case (Trace, None, None, None) =>
                traceInstance.trace(Some(message))
 
-             case (Trace, t, None) =>
+             case (Trace, t, None, None) =>
+               traceInstance.trace(message, t.get)
 
-             case (Trace, None, format) =>
-
+             case (Trace, None, format, arguments) =>
+               traceInstance.trace(format.get, arguments.get)
 
              //Warning
-             case (Warn, None, None) =>
+             case (Warn, None, None, None) =>
 
-             case (Warn, t, None) =>
+             case (Warn, t, None, None) =>
 
-             case (Warn, None, format) =>
+             case (Warn, None, format, arguments) =>
 
              //Info
 
